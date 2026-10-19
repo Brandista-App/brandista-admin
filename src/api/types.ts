@@ -56,3 +56,40 @@ export interface Onboarding {
   brandStatus: string | null
   activationEligible: boolean
 }
+
+export type PublicationStatus = 'DRAFT' | 'PUBLISHED' | 'UNPUBLISHED' | 'DEACTIVATED'
+export interface ProductInput {
+  name: string
+  slug: string
+  description: string | null
+  brandId: number
+  categoryId: number
+  price: number
+  availability: 'AVAILABLE' | 'UNAVAILABLE'
+}
+export interface Product extends ProductInput {
+  id: number
+  brandName: string
+  categoryName: string
+  currency: string
+  publicationStatus: PublicationStatus
+  stockQuantity: number
+  createdAt: string
+  updatedAt: string
+}
+export interface ProductPage {
+  content: Product[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+export interface CategoryPage {
+  content: { id: number; name: string; status: string }[]
+  page: number
+  totalPages: number
+}
+export interface Stock {
+  productId: number
+  stockQuantity: number
+}

@@ -7,6 +7,11 @@ import type {
   LoginResponse,
   Onboarding,
   ReviewDecision,
+  Product,
+  ProductInput,
+  ProductPage,
+  CategoryPage,
+  Stock,
 } from './types'
 
 export class ApiError extends Error {
@@ -123,5 +128,35 @@ export function operations(request: <T>(path: string, init?: RequestInit) => Pro
     onboarding: (id: number) => request<Onboarding>(`${app(id)}/onboarding`),
     activate: (id: number) => request<Onboarding>(`${app(id)}/activate`, { method: 'POST' }),
     assignedBrands: () => request<AssignedBrand[]>('/merchant/brands'),
+    products: (brand: number, page = 0) =>
+      request<ProductPage>(`/merchant/brands/${brand}/products?page=${page}&size=50`),
+    product: (brand: number, id: number) =>
+      request<Product>(`/merchant/brands/${brand}/products/${id}`),
+    saveProduct: (brand: number, input: ProductInput, id?: number) =>
+      request<Product>(`/merchant/brands/${brand}/products${id ? `/${id}` : ''}`, {
+        method: id ? 'PUT' : 'POST',
+        body: JSON.stringify({ ...input, brandId: brand }),
+      }),
+    productStatus: (brand: number, id: number, action: 'publish' | 'unpublish' | 'deactivate') =>
+      request<Product>(`/merchant/brands/${brand}/products/${id}/${action}`, { method: 'PATCH' }),
+    stock: (brand: number, id: number) =>
+      request<Stock>(`/merchant/brands/${brand}/products/${id}/stock`),
+    saveStock: (brand: number, id: number, stockQuantity: number) =>
+      request<Stock>(`/merchant/brands/${brand}/products/${id}/stock`, {
+        method: 'PUT',
+        body: JSON.stringify({ stockQuantity }),
+      }),
+    categories: async () => {
+      const categories: CategoryPage['content'] = []
+      let page = 0
+      let total: number
+      do {
+        const result = await request<CategoryPage>(`/categories?page=${page}&size=100`)
+        categories.push(...result.content)
+        total = result.totalPages
+        page++
+      } while (page < total)
+      return categories
+    },
   }
 }

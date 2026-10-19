@@ -1,5 +1,7 @@
 # Backend integration contract — PR5
 
+The additional merchant catalogue, category and inventory contracts introduced in the frontend by PR6 are documented in [PR6 merchant catalogue](PR6-MERCHANT-CATALOGUE.md). They use the same inspected backend revision.
+
 Inspected in the official local `brandista-mvp` checkout at merged PR4 commit `c5c11b9a828a2b72512cd4207ca17fd301a002c0`. All paths below are relative to the configured API root ending in `/api/v1`. No backend source or authorization rule is changed in this PR.
 
 | Method | Path                                                              | Request / response                                                                                     |

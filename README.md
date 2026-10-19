@@ -55,6 +55,8 @@ Read [API contracts](docs/BACKEND-CONTRACT.md) and [security and deployment](doc
 
 Production invitation delivery must be configured separately on the backend. A 503 is surfaced as unavailable, with no claim that delivery succeeded. Recipient email comes only from the approved application; no recipient override or invitation-token input/output exists here.
 
-This foundation does **not** implement invitation acceptance, account provisioning, administrator grant management, complete merchant catalogue/order screens, a delivery provider, refresh-token sessions, cross-tab logout, server-side session revocation, or a production deployment. An INACTIVE brand awaiting acceptance may not appear in the merchant list until activation; the super-admin onboarding screen handles that transition.
+Merchant product and inventory management is documented in [PR6 merchant workflows and contracts](docs/PR6-MERCHANT-CATALOGUE.md): assigned-brand selection, overview, paginated product list, creation/editing, publication actions and stock totals. Product images, variants and atomic stock conflict prevention require backend follow-ups.
+
+This portal does **not** implement invitation acceptance, account provisioning, administrator grant management, merchant order screens, a delivery provider, refresh-token sessions, cross-tab logout, server-side session revocation, or a production deployment. An INACTIVE brand awaiting acceptance may not appear in the merchant list until activation; the super-admin onboarding screen handles that transition.
 
 Reloading a tab deliberately loses the in-memory bearer token and requires sign-in again. Signing out clears this browser session but does not revoke the JWT on the backend. Production operational acceptance still needs an approved environment, accounts, HTTPS/CORS/headers, delivery adapter, and manual browser/device/accessibility verification; passing isolated tests does not establish those.
