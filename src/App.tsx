@@ -12,6 +12,7 @@ import {
 import { errorMessage } from './api/client'
 import { useAuth } from './auth/context'
 import { Applications, ApplicationDetail, Overview, AssignedBrands } from './pages'
+import { MerchantWorkspace } from './merchant/Workspace'
 
 function Login() {
   const { store, session } = useAuth()
@@ -240,6 +241,7 @@ export function App() {
           <Route path="applications/:id" element={<ApplicationDetail />} />
         </Route>
         <Route path="brands" element={<AssignedBrands />} />
+        <Route path="brands/:brandId/*" element={<MerchantWorkspace />} />
         <Route
           path="*"
           element={

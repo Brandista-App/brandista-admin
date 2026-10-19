@@ -217,7 +217,7 @@ describe('login and protected navigation', () => {
     expect(fetcher.mock.calls.some((call) => call[0].includes('/admin/'))).toBe(false)
     fireEvent.click(within(nav).getByRole('link', { name: /Assigned brands/ }))
     expect(await screen.findByRole('heading', { name: 'Test Atelier' })).toBeInTheDocument()
-    expect(screen.getByText(/read-only brand access foundation/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Manage catalogue' })).toBeInTheDocument()
   })
 })
 

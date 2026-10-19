@@ -995,3 +995,85 @@ dd {
     transition: none !important;
   }
 }
+
+/* Merchant catalogue uses the existing Brandista palette and components. */
+.merchant-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  margin: 22px 0 28px;
+}
+.merchant-tabs a {
+  padding: 12px 18px;
+  text-decoration: none;
+  border-bottom: 3px solid transparent;
+}
+.merchant-tabs a.active {
+  border-color: var(--brown);
+  color: var(--espresso);
+  font-weight: bold;
+}
+.merchant-filters {
+  grid-template-columns: 2fr 1fr 1fr;
+}
+.product-form-grid,
+.product-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 26px;
+}
+.product-facts dt {
+  color: var(--muted);
+  font-size: 0.8rem;
+  margin-bottom: 8px;
+}
+.product-facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.product-description {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  margin: 24px 0;
+}
+.product-form-grid small {
+  display: block;
+  color: var(--muted);
+  line-height: 1.6;
+  margin-top: 8px;
+}
+.product-form-grid + label {
+  margin-top: 24px;
+}
+.product-form-grid ~ textarea {
+  width: 100%;
+}
+.detail-card + .detail-card {
+  margin-top: 24px;
+}
+.brand-card .button {
+  margin-top: 20px;
+}
+.badge.published {
+  background: #e6eddf;
+  color: #314527;
+}
+.badge.draft,
+.badge.unpublished {
+  background: var(--champagne);
+}
+.badge.deactivated {
+  background: #eadbd6;
+  color: #6b3028;
+}
+@media (max-width: 760px) {
+  .merchant-filters,
+  .product-form-grid,
+  .product-facts {
+    grid-template-columns: 1fr;
+  }
+  .merchant-tabs a {
+    padding: 12px;
+  }
+}

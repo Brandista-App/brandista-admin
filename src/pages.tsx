@@ -592,6 +592,9 @@ export function AssignedBrands() {
               <h2>{brand.name}</h2>
               <p>{brand.slug}</p>
               <Badge value="ASSIGNED" />
+              <Link className="button primary" to={`/brands/${brand.id}`}>
+                Manage catalogue
+              </Link>
             </article>
           ))}
           {!resource.data?.length && (
@@ -603,8 +606,8 @@ export function AssignedBrands() {
         </div>
       )}
       <p className="scope-note">
-        This is a read-only brand access foundation. Merchant catalogue management and order
-        dashboards are not implemented in this release.
+        Manage products and inventory for your active assignments. Access is checked by the backend
+        on every request.
       </p>
     </section>
   )

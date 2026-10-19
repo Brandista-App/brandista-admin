@@ -89,7 +89,9 @@ export class SessionStore {
       this.logout('Your session expired. Sign in again.')
       throw new ApiError(401, 'Sign in to continue.')
     }
-    if (this.value.mode === 'merchant' && !path.startsWith('/merchant/'))
+    const publicCategoryRead =
+      /^\/categories\?page=\d+&size=100$/.test(path) && (!init?.method || init.method === 'GET')
+    if (this.value.mode === 'merchant' && !path.startsWith('/merchant/') && !publicCategoryRead)
       throw new ApiError(403, 'This page requires super-admin access.')
     try {
       const data = await this.client.request<T>(path, token, init)
