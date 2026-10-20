@@ -124,6 +124,49 @@ async function open(path: string, mode: 'merchant' | 'admin' = 'merchant') {
   return store
 }
 describe('merchant catalogue and inventory', () => {
+  it.each([
+    [2750.5, 'Rs 2,750.50', '2750.50'],
+    [2750.0, 'Rs 2,750.00', '2750.00'],
+    [0.5, 'Rs 0.50', '0.50'],
+    [999999.99, 'Rs 999,999.99', '999999.99'],
+  ] as const)('preserves %s in list, detail and editing', async (amount, formatted, input) => {
+    const { state, calls } = backend()
+    state.products[0].price = amount
+    await open('/brands/3/products')
+    await screen.findByText(formatted, { exact: true })
+    fireEvent.click(screen.getByRole('link', { name: 'Linen shirt' }))
+    await screen.findByText(formatted, { exact: true })
+    fireEvent.click(screen.getByRole('button', { name: 'Edit product' }))
+    await screen.findByRole('option', { name: 'Clothing' })
+    expect(screen.getByLabelText('Price (PKR)')).toHaveValue(input)
+    fireEvent.click(screen.getByRole('button', { name: 'Save product' }))
+    await screen.findByText(formatted, { exact: true })
+    expect(calls.find((c) => c.method === 'PUT')?.body?.price).toBe(amount)
+  })
+  it.each([
+    [2750.5, 'Rs 2,750.50'],
+    [2750.0, 'Rs 2,750.00'],
+    [0.5, 'Rs 0.50'],
+    [999999.99, 'Rs 999,999.99'],
+  ] as const)('preserves %s through product creation', async (amount, formatted) => {
+    const { calls } = backend()
+    await open('/brands/3/products/new')
+    await screen.findByRole('option', { name: 'Clothing' })
+    fireEvent.change(screen.getByLabelText('Product name'), {
+      target: { value: 'Precision fixture' },
+    })
+    fireEvent.change(screen.getByLabelText('Product slug'), {
+      target: { value: 'precision-fixture' },
+    })
+    fireEvent.change(screen.getByLabelText('Price (PKR)'), { target: { value: amount.toFixed(2) } })
+    fireEvent.change(screen.getByLabelText('Category'), { target: { value: '2' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Create product' }))
+    await screen.findByRole('heading', { name: 'Precision fixture' })
+    await screen.findByText(formatted, { exact: true })
+    expect(
+      calls.find((c) => c.method === 'POST' && c.path.endsWith('/products'))?.body?.price,
+    ).toBe(amount)
+  })
   it('switches only between assigned brands and clears old products', async () => {
     const { calls } = backend()
     await open('/brands/3')

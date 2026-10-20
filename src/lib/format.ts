@@ -1,5 +1,17 @@
 import { ApiError } from '../api/client'
 
+/** Explicit precision: locale currency defaults may round PKR to whole rupees. */
+export function formatCurrency(value: number, currency = 'PKR') {
+  return new Intl.NumberFormat('en-PK', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })
+    .format(value)
+    .replace(/[\u00a0\u202f]/g, ' ')
+}
+
 export function dateTime(value: string | null) {
   if (!value) return '—'
   // Backend LocalDateTime is UTC, not the browser's local timezone.
