@@ -5,7 +5,7 @@ import type { AssignedBrand, Product, ProductInput } from '../api/types'
 import { useAuth } from '../auth/context'
 import { Badge, ErrorNotice, Loading } from '../components'
 import { useResource } from '../lib/resource'
-import { dateTime } from '../lib/format'
+import { dateTime, formatCurrency } from '../lib/format'
 import { stockLabel, validPrice, validQuantity } from './validation'
 
 export function MerchantWorkspace() {
@@ -92,11 +92,6 @@ function ensureBrand(product: Product, brand: AssignedBrand) {
   if (product.brandId !== brand.id)
     throw new ApiError(403, 'The backend returned a product outside this brand. Access stopped.')
   return product
-}
-function money(product: Product) {
-  return new Intl.NumberFormat('en-PK', { style: 'currency', currency: product.currency }).format(
-    product.price,
-  )
 }
 
 function Catalogue({
@@ -230,7 +225,7 @@ function Catalogue({
                         <small>{p.slug}</small>
                       </td>
                       <td>{p.categoryName}</td>
-                      <td>{money(p)}</td>
+                      <td>{formatCurrency(p.price, p.currency)}</td>
                       <td>
                         <Badge value={p.publicationStatus} />
                         <small>{p.availability}</small>
@@ -358,7 +353,7 @@ function Detail({ brand, productId }: { brand: AssignedBrand; productId: string 
         <dl className="product-facts">
           <div>
             <dt>Price</dt>
-            <dd>{money(product)}</dd>
+            <dd>{formatCurrency(product.price, product.currency)}</dd>
           </div>
           <div>
             <dt>Category</dt>
@@ -551,7 +546,7 @@ function ProductEditor({
   const [slug, setSlug] = useState(product?.slug ?? '')
   const [description, setDescription] = useState(product?.description ?? '')
   const [category, setCategory] = useState(String(product?.categoryId ?? ''))
-  const [price, setPrice] = useState(product ? String(product.price) : '')
+  const [price, setPrice] = useState(product ? product.price.toFixed(2) : '')
   const [availability, setAvailability] = useState<ProductInput['availability']>(
     product?.availability ?? 'AVAILABLE',
   )
