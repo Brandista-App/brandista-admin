@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link, NavLink, Route, Routes, useNavigate, useParams } from 'react-router-dom'
+import { Link, NavLink, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom'
 import { ApiError } from '../api/client'
 import type { AssignedBrand, Product, ProductInput } from '../api/types'
 import { useAuth } from '../auth/context'
@@ -7,6 +7,7 @@ import { Badge, ErrorNotice, Loading } from '../components'
 import { useResource } from '../lib/resource'
 import { dateTime, formatCurrency } from '../lib/format'
 import { stockLabel, validPrice, validQuantity } from './validation'
+import { OrderList, OrderDetailRoute } from './Orders'
 
 export function MerchantWorkspace() {
   const { session } = useAuth()
@@ -24,6 +25,7 @@ function AuthorizedWorkspace() {
   const { store } = useAuth()
   const { brandId } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
   const brands = useResource('merchant-access', store.api.assignedBrands)
   if (brands.loading) return <Loading label="Verifying brand access…" />
   if (brands.error) return <ErrorNotice error={brands.error} retry={brands.reload} />
@@ -48,7 +50,7 @@ function AuthorizedWorkspace() {
         <div>
           <span className="eyebrow">MERCHANT WORKSPACE · BRAND #{brand.id}</span>
           <h1>{brand.name}</h1>
-          <p className="muted">A considered catalogue. A clear view of inventory.</p>
+          <p className="muted">A considered catalogue. Clear inventory and fulfillment.</p>
         </div>
         {brands.data && brands.data.length > 1 && (
           <div>
@@ -56,7 +58,11 @@ function AuthorizedWorkspace() {
             <select
               id="brand-selector"
               value={brand.id}
-              onChange={(e) => navigate(`/brands/${e.target.value}`)}
+              onChange={(e) =>
+                navigate(
+                  `/brands/${e.target.value}${/\/orders(?:\/|$)/.test(location.pathname) ? '/orders' : ''}`,
+                )
+              }
             >
               {brands.data.map((b) => (
                 <option key={b.id} value={b.id}>
@@ -73,6 +79,7 @@ function AuthorizedWorkspace() {
         </NavLink>
         <NavLink to={`/brands/${brand.id}/products`}>Products</NavLink>
         <NavLink to={`/brands/${brand.id}/inventory`}>Inventory</NavLink>
+        <NavLink to={`/brands/${brand.id}/orders`}>Orders</NavLink>
       </nav>
       <div key={brand.id}>
         <Routes>
@@ -81,7 +88,12 @@ function AuthorizedWorkspace() {
           <Route path="inventory" element={<Catalogue brand={brand} view="inventory" />} />
           <Route path="products/new" element={<ProductEditor brand={brand} />} />
           <Route path="products/:productId" element={<ProductDetail brand={brand} />} />
-          <Route path="*" element={<p>Page unavailable. Choose Products or Inventory.</p>} />
+          <Route path="orders" element={<OrderList brand={brand} />} />
+          <Route path="orders/:orderId" element={<OrderDetailRoute brand={brand} />} />
+          <Route
+            path="*"
+            element={<p>Page unavailable. Choose Products, Inventory or Orders.</p>}
+          />
         </Routes>
       </div>
     </section>

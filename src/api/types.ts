@@ -93,3 +93,52 @@ export interface Stock {
   productId: number
   stockQuantity: number
 }
+
+export type FulfillmentStatus = 'PLACED' | 'ACCEPTED' | 'PACKED' | 'SHIPPED' | 'DELIVERED'
+export interface MerchantOrderSummary {
+  orderId: number
+  brandId: number
+  createdAt: string
+  fulfillmentStatus: FulfillmentStatus
+  version: number
+  currency: string
+  itemsSubtotal: number
+  lineCount: number
+  availableTransitions: FulfillmentStatus[]
+}
+export interface MerchantOrderPage {
+  content: MerchantOrderSummary[]
+  page: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+export interface MerchantOrderDetail {
+  order: MerchantOrderSummary
+  deliveryAddress: {
+    recipientName: string
+    phoneNumber: string
+    addressLine1: string
+    addressLine2: string | null
+    city: string
+    province: string | null
+    postalCode: string | null
+    deliveryInstructions: string | null
+  }
+  items: {
+    productId: number
+    productSlug: string
+    productName: string
+    brandId: number
+    brandName: string
+    quantity: number
+    unitPrice: number
+    lineSubtotal: number
+  }[]
+  timeline: {
+    fromStatus: FulfillmentStatus
+    toStatus: FulfillmentStatus
+    version: number
+    occurredAt: string
+  }[]
+}
