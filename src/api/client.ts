@@ -12,6 +12,9 @@ import type {
   ProductPage,
   CategoryPage,
   Stock,
+  FulfillmentStatus,
+  MerchantOrderPage,
+  MerchantOrderDetail,
 } from './types'
 
 export class ApiError extends Error {
@@ -128,6 +131,17 @@ export function operations(request: <T>(path: string, init?: RequestInit) => Pro
     onboarding: (id: number) => request<Onboarding>(`${app(id)}/onboarding`),
     activate: (id: number) => request<Onboarding>(`${app(id)}/activate`, { method: 'POST' }),
     assignedBrands: () => request<AssignedBrand[]>('/merchant/brands'),
+    orders: (brand: number, page = 0, status?: FulfillmentStatus) =>
+      request<MerchantOrderPage>(
+        `/merchant/brands/${brand}/orders?page=${page}&size=20${status ? `&status=${encodeURIComponent(status)}` : ''}`,
+      ),
+    order: (brand: number, id: number) =>
+      request<MerchantOrderDetail>(`/merchant/brands/${brand}/orders/${id}`),
+    fulfillOrder: (brand: number, id: number, status: FulfillmentStatus, expectedVersion: number) =>
+      request<MerchantOrderDetail>(`/merchant/brands/${brand}/orders/${id}/fulfillment`, {
+        method: 'POST',
+        body: JSON.stringify({ status, expectedVersion }),
+      }),
     products: (brand: number, page = 0) =>
       request<ProductPage>(`/merchant/brands/${brand}/products?page=${page}&size=50`),
     product: (brand: number, id: number) =>
