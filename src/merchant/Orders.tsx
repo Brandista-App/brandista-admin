@@ -436,10 +436,11 @@ function FulfillmentConfirmation({
   const dialog = useRef<HTMLDialogElement>(null)
   useEffect(() => {
     const element = dialog.current
+    const trigger = returnFocus.current
     element?.showModal()
     return () => {
       element?.close()
-      returnFocus.current?.focus()
+      trigger?.focus()
     }
   }, [returnFocus])
   return (

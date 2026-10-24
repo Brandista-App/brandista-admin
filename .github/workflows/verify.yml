@@ -22,3 +22,12 @@ jobs:
       - run: npm test
       - run: npm run build
       - run: npm audit --omit=dev --audit-level=high
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Brandista-Admin-Portal
+          retention-days: 14
+          path: |
+            dist/
+            docs/FINAL-001-REVISED.md
+            deploy/
+          if-no-files-found: error

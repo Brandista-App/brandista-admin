@@ -151,6 +151,36 @@ function Catalogue({
           </Link>
         </div>
       </div>
+      {view === 'overview' && (
+        <section className="panel merchant-start">
+          <span className="eyebrow">YOUR BRAND, YOUR WORKSPACE</span>
+          <h2>From first draft to first order.</h2>
+          <div className="journey">
+            <article>
+              <span>01</span>
+              <h3>Create a draft</h3>
+              <p>Add a clear name, description, category and PKR price.</p>
+            </article>
+            <article>
+              <span>02</span>
+              <h3>Set stock and publish</h3>
+              <p>
+                Review stock separately from publication. Only eligible published products appear to
+                customers.
+              </p>
+            </article>
+            <article>
+              <span>03</span>
+              <h3>Fulfill your orders</h3>
+              <p>
+                Open Orders to progress only supported states for this brand. Payment collection and
+                courier booking remain separate operations.
+              </p>
+            </article>
+          </div>
+          <Link to={`/brands/${brand.id}/orders`}>Open this brand’s orders →</Link>
+        </section>
+      )}
       {resource.loading ? (
         <Loading label="Loading brand products…" />
       ) : resource.error ? (

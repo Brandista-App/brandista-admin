@@ -14,6 +14,102 @@
   --muted: #776657;
   --line: #dfd3c4;
 }
+.public-workspace {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 28px;
+}
+.public-workspace .panel {
+  padding: 28px;
+}
+@media (max-width: 600px) {
+  .public-workspace .panel {
+    padding: 20px;
+  }
+}
+.public-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.public-header img {
+  width: 104px;
+  height: 104px;
+  object-fit: contain;
+  border-radius: 50%;
+}
+.onboarding-panel {
+  max-width: 680px;
+  margin: 0 auto;
+}
+.check-line {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  line-height: 1.5;
+  margin-top: 18px;
+}
+.check-line input {
+  width: 20px;
+  min-height: 20px;
+  flex: 0 0 20px;
+  margin: 2px 0 0;
+}
+.presentation-label {
+  background: #173d32;
+  color: #fff8ed;
+  padding: 15px 20px;
+  border-radius: 12px;
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  line-height: 1.6;
+  margin-bottom: 28px;
+}
+.presentation-page > .panel {
+  margin-bottom: 26px;
+}
+.presentation-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.presentation-detail {
+  background: #f1e7db;
+  border-radius: 16px;
+  padding: 26px;
+  margin-top: 24px;
+}
+.presentation-page .metric strong {
+  font-size: clamp(1.15rem, 2vw, 1.8rem);
+}
+.presentation-page .actions {
+  margin-bottom: 24px;
+}
+.presentation-page ol {
+  line-height: 1.9;
+  padding-left: 22px;
+}
+.merchant-start {
+  margin-bottom: 24px;
+}
+@media (max-width: 600px) {
+  .public-workspace {
+    padding: 16px;
+  }
+  .public-header {
+    gap: 14px;
+  }
+  .presentation-steps .button {
+    flex: 1 1 42%;
+    white-space: normal;
+  }
+  .presentation-detail {
+    padding: 18px;
+  }
+}
 * {
   box-sizing: border-box;
 }
@@ -1153,5 +1249,18 @@ dd {
   }
   .merchant-tabs a {
     padding: 12px;
+  }
+}
+
+.merchant-start .journey {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.presentation-page .metric-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+@media (max-width: 600px) {
+  .merchant-start .journey,
+  .presentation-page .metric-grid {
+    grid-template-columns: 1fr;
   }
 }
