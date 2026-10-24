@@ -13,6 +13,8 @@ import { errorMessage } from './api/client'
 import { useAuth } from './auth/context'
 import { Applications, ApplicationDetail, Overview, AssignedBrands } from './pages'
 import { MerchantWorkspace } from './merchant/Workspace'
+import { AcceptInvitation } from './onboarding/AcceptInvitation'
+import { Presentation } from './presentation/Presentation'
 
 function Login() {
   const { store, session } = useAuth()
@@ -121,6 +123,12 @@ function Login() {
           <div className="login-help">
             <strong>Need access?</strong>
             <p>Contact your authorized Brandista operator.</p>
+            <p>
+              <Link to="/accept-invitation">Accept a brand invitation</Link>
+            </p>
+            <p>
+              <Link to="/presentation">Explore the offline marketplace presentation</Link>
+            </p>
           </div>
         </div>
       </section>
@@ -233,6 +241,8 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/accept-invitation" element={<AcceptInvitation />} />
+      <Route path="/presentation" element={<Presentation />} />
       <Route element={<ProtectedShell />}>
         <Route index element={<Home />} />
         <Route element={<AdminOnly />}>
