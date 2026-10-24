@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { StrictMode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { ApiClient } from '../src/api/client'
 import { acceptBrandInvitation } from '../src/onboarding/accept'
@@ -15,6 +16,23 @@ const input = {
   createAccount: false,
 }
 afterEach(() => vi.unstubAllGlobals())
+it('route scrolling never installs a Promise as an effect cleanup', () => {
+  const scroll = vi
+    .spyOn(window, 'scrollTo')
+    .mockImplementation(() => Promise.resolve() as unknown as void)
+  const store = new SessionStore(new ApiClient('https://api.example.invalid/api/v1'))
+  const page = render(
+    <StrictMode>
+      <SessionContext value={store}>
+        <MemoryRouter initialEntries={['/presentation']}>
+          <App />
+        </MemoryRouter>
+      </SessionContext>
+    </StrictMode>,
+  )
+  expect(() => page.unmount()).not.toThrow()
+  scroll.mockRestore()
+})
 it('accepts only through authenticated existing contract without requiring active merchant access', async () => {
   const fetcher = vi
     .fn()

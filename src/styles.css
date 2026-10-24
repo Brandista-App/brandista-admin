@@ -19,6 +19,14 @@
   margin: 0 auto;
   padding: 28px;
 }
+.public-workspace .panel {
+  padding: 28px;
+}
+@media (max-width: 600px) {
+  .public-workspace .panel {
+    padding: 20px;
+  }
+}
 .public-header {
   display: flex;
   align-items: center;

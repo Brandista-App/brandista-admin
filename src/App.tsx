@@ -238,6 +238,10 @@ function Home() {
   return <Navigate to={session?.mode === 'admin' ? '/overview' : '/brands'} replace />
 }
 export function App() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
