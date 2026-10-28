@@ -21,6 +21,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+        env:
+          VITE_API_BASE_URL: https://api.brandistaapp.com/api/v1
       - run: npm audit --omit=dev --audit-level=high
       - uses: actions/upload-artifact@v7
         with:
@@ -31,3 +33,23 @@ jobs:
             docs/FINAL-001-REVISED.md
             deploy/
           if-no-files-found: error
+
+  docker-spa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Build the optional nginx deployment image
+        run: docker build -f deploy/Dockerfile --build-arg VITE_API_BASE_URL=https://api.brandistaapp.com/api/v1 -t brandista-admin:ci .
+      - name: Check SPA history fallback and missing assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name admin-smoke -p 127.0.0.1:8080:80 brandista-admin:ci
+          trap 'docker rm -f admin-smoke' EXIT
+          curl --retry 10 --retry-all-errors --retry-max-time 20 --retry-delay 1 -fsS http://127.0.0.1:8080/ -o /tmp/root.html
+          for path in /login /accept-invitation /brands/3/products; do
+            curl -fsS "http://127.0.0.1:8080$path" -o /tmp/route.html
+            cmp /tmp/root.html /tmp/route.html
+          done
+          test "$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/assets/missing.js)" = 404
