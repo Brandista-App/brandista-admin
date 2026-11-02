@@ -70,7 +70,8 @@ export class ApiClient {
   }
   async request<T>(path: string, token: string | null, init: RequestInit = {}): Promise<T> {
     const headers = new Headers({ Accept: 'application/json' })
-    if (init.body) headers.set('Content-Type', 'application/json')
+    if (init.body && !(init.body instanceof FormData))
+      headers.set('Content-Type', 'application/json')
     if (token) headers.set('Authorization', `Bearer ${token}`)
     let response: Response
     try {

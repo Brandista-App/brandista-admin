@@ -1,0 +1,92 @@
+.cc-fieldset {
+  border: 0;
+  padding: 0;
+  min-width: 0;
+}
+.cc-status,
+.cc-actions,
+.cc-row {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.cc-status {
+  padding: 1rem 0;
+  border-bottom: 1px solid #ddd;
+}
+.cc-actions {
+  margin: 1.5rem 0;
+}
+.cc-card {
+  background: #fff;
+  border: 1px solid #e0ddd5;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1rem 0;
+}
+.cc-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+}
+.cc label {
+  display: block;
+  margin: 0.8rem 0;
+}
+.cc input:not([type='checkbox']),
+.cc textarea,
+.cc select {
+  display: block;
+  width: 100%;
+  padding: 0.7rem;
+  border: 1px solid #aaa;
+  border-radius: 6px;
+}
+.cc input[type='checkbox'] {
+  margin-right: 0.6rem;
+}
+.cc-image {
+  max-width: 100%;
+  width: 420px;
+  max-height: 300px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+.cc button {
+  cursor: pointer;
+  padding: 0.6rem 1rem;
+}
+.cc button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.cc-order {
+  margin-left: auto;
+  display: flex;
+  gap: 0.4rem;
+}
+.cc-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 2rem;
+}
+.cc-metrics article {
+  padding: 2rem;
+  background: #e9eee5;
+  border-radius: 12px;
+}
+.cc-metrics strong,
+.cc-metrics span {
+  display: block;
+}
+.cc-metrics strong {
+  font-size: 2.5rem;
+}
+@media (max-width: 800px) {
+  .cc-grid,
+  .cc-metrics {
+    grid-template-columns: 1fr;
+  }
+}
