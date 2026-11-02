@@ -45,6 +45,11 @@
 }
 .cc input[type='checkbox'] {
   margin-right: 0.6rem;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  vertical-align: middle;
 }
 .cc-image {
   max-width: 100%;
