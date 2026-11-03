@@ -13,6 +13,7 @@ import { errorMessage } from './api/client'
 import { useAuth } from './auth/context'
 import { Applications, ApplicationDetail, Overview, AssignedBrands } from './pages'
 import { MerchantWorkspace } from './merchant/Workspace'
+import { MerchantTerms } from './onboarding/MerchantTerms'
 import { AcceptInvitation } from './onboarding/AcceptInvitation'
 import { ControlCenter } from './content/ControlCenter'
 import { Presentation } from './presentation/Presentation'
@@ -258,6 +259,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/merchant-terms" element={<MerchantTerms />} />
       <Route path="/accept-invitation" element={<AcceptInvitation />} />
       <Route path="/presentation" element={<Presentation />} />
       <Route element={<ProtectedShell />}>

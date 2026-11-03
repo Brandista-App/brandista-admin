@@ -80,6 +80,10 @@ function backend() {
         totalElements: state.invitations.length,
       })
     }
+    if (path.endsWith('/expire')) {
+      state.invitations = [{ ...invitation, status: 'EXPIRED' }]
+      return json(state.invitations[0])
+    }
     if (path.endsWith('/revoke')) {
       state.invitations = [{ ...invitation, status: 'REVOKED' }]
       return json(state.invitations[0])
@@ -278,12 +282,46 @@ describe('application review', () => {
 })
 
 describe('invitations and controlled activation', () => {
+  it('expires a pending invitation only after explicit confirmation', async () => {
+    const { fetcher, state } = await openDetail({ approved: true, invitationStatus: 'PENDING' })
+    fireEvent.click(screen.getByRole('button', { name: 'Expire invitation 12' }))
+    expect(fetcher.mock.calls.some((call) => call[0].endsWith('/12/expire'))).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm expiry' }))
+    await waitFor(() => expect(state.invitations[0].status).toBe('EXPIRED'))
+    expect(
+      fetcher.mock.calls.some(
+        (call) => call[0].endsWith('/12/expire') && call[1]?.method === 'POST',
+      ),
+    ).toBe(true)
+  })
+  it('shows provider acceptance and delivery failures without claiming inbox success', async () => {
+    const { state } = await openDetail({ approved: true, invitationStatus: 'PENDING' })
+    state.invitations[0].delivery = {
+      state: 'PROVIDER_ACCEPTED',
+      attempts: 1,
+      errorCode: null,
+      providerId: 'synthetic-provider-id',
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh onboarding' }))
+    expect(
+      await screen.findByText('Provider accepted; inbox delivery not yet confirmed.'),
+    ).toBeInTheDocument()
+    expect(screen.getByText('Provider ID: synthetic-provider-id')).toBeInTheDocument()
+    state.invitations[0].delivery = {
+      state: 'FAILED',
+      attempts: 6,
+      errorCode: 'PROVIDER_UNAVAILABLE',
+      providerId: null,
+    }
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh onboarding' }))
+    expect(await screen.findByText('PROVIDER UNAVAILABLE')).toBeInTheDocument()
+  })
   it('creates an invitation without recipient/token input or raw-token display', async () => {
     const { fetcher } = await openDetail({ approved: true })
     fireEvent.click(screen.getByRole('button', { name: 'Create invitation' }))
     expect(screen.getByText(/recipient is fixed/)).toHaveTextContent(application.contactEmail)
     fireEvent.click(screen.getByRole('button', { name: 'Confirm invitation' }))
-    await screen.findByText(/backend confirmed invitation delivery/)
+    await screen.findByText(/queueing does not confirm receipt/)
     const call = fetcher.mock.calls.find(
       (call) => call[0].endsWith('/invitations') && call[1]?.method === 'POST',
     )!
@@ -302,7 +340,7 @@ describe('invitations and controlled activation', () => {
       expect(error).not.toHaveTextContent('NEVER-ECHO-SECRET')
       if (status === 503) expect(error).toHaveTextContent('No invitation delivery is confirmed')
       if (status === 409) expect(error).toHaveTextContent('conflicts')
-      expect(screen.queryByText(/backend confirmed invitation delivery/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/queueing does not confirm receipt/)).not.toBeInTheDocument()
     },
   )
   it('revokes a pending invitation after confirmation', async () => {
@@ -321,7 +359,7 @@ describe('invitations and controlled activation', () => {
     expect(screen.getByRole('button', { name: 'Revoke invitation 12' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Reissue invitation 12' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm reissue' }))
-    await screen.findByText(/backend confirmed invitation delivery/)
+    await screen.findByText(/queueing does not confirm receipt/)
     expect(
       fetcher.mock.calls.some(
         (call) => call[0].endsWith('/brand-invitations/12/reissue') && call[1]?.method === 'POST',

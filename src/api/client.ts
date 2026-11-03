@@ -125,6 +125,8 @@ export function operations(request: <T>(path: string, init?: RequestInit) => Pro
       request<InvitationPage>(`${app(id)}/invitations?page=${page}&size=20`),
     createInvitation: (id: number) =>
       request<Invitation>(`${app(id)}/invitations`, { method: 'POST' }),
+    expireInvitation: (id: number) =>
+      request<Invitation>(`/super-admin/brand-invitations/${id}/expire`, { method: 'POST' }),
     revokeInvitation: (id: number) =>
       request<Invitation>(`/super-admin/brand-invitations/${id}/revoke`, { method: 'POST' }),
     reissueInvitation: (id: number) =>

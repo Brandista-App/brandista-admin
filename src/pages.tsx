@@ -210,12 +210,14 @@ type Intent =
   | { kind: 'create' }
   | { kind: 'activate' }
   | { kind: 'revoke'; id: number }
+  | { kind: 'expire'; id: number }
   | { kind: 'reissue'; id: number }
 const intentLabels = {
   review: 'Confirm review',
   create: 'Confirm invitation',
   activate: 'Confirm activation',
   revoke: 'Confirm revocation',
+  expire: 'Confirm expiry',
   reissue: 'Confirm reissue',
 }
 export function ApplicationDetail() {
@@ -260,11 +262,12 @@ function Detail({ rawId }: { rawId: string | undefined }) {
       if (action.kind === 'review') await store.api.review(id, action.decision, action.note)
       else if (action.kind === 'create') await store.api.createInvitation(id)
       else if (action.kind === 'activate') await store.api.activate(id)
+      else if (action.kind === 'expire') await store.api.expireInvitation(action.id)
       else if (action.kind === 'revoke') await store.api.revokeInvitation(action.id)
       else await store.api.reissueInvitation(action.id)
       setNotice(
         action.kind === 'create' || action.kind === 'reissue'
-          ? 'The backend confirmed invitation delivery. Review the refreshed invitation status below.'
+          ? 'Invitation created. Email delivery is tracked separately below; queueing does not confirm receipt.'
           : 'The backend completed the action. Review the refreshed state below.',
       )
       setIntent(null)
@@ -313,14 +316,16 @@ function Detail({ rawId }: { rawId: string | undefined }) {
                 <h2 id="confirm-heading">{intentLabels[intent.kind]}</h2>
                 <p>
                   {intent.kind === 'review'
-                    ? `Record ${intent.decision.replaceAll('_', ' ')} for ${data.application.brandName}? Approval creates an inactive brand; it does not activate it.`
+                    ? `Record ${intent.decision.replaceAll('_', ' ')} for ${data.application.brandName}? Approval creates a brand and queues its invitation. The brand activates when the invited merchant completes registration.`
                     : intent.kind === 'activate'
                       ? 'Activate this brand? It will become available through existing customer catalogue rules. The backend rechecks eligibility.'
-                      : intent.kind === 'revoke'
-                        ? 'Revoke this pending invitation? The recipient will no longer be able to accept it.'
-                        : intent.kind === 'reissue'
-                          ? `Replace invitation #${intent.id}? Its previous token will stop working only if the new invitation is committed.`
-                          : `Send an invitation to ${data.application.contactEmail}? This recipient is fixed by the approved application.`}
+                      : intent.kind === 'expire'
+                        ? 'Expire this pending invitation immediately? Its link will stop working.'
+                        : intent.kind === 'revoke'
+                          ? 'Revoke this pending invitation? The recipient will no longer be able to accept it.'
+                          : intent.kind === 'reissue'
+                            ? `Replace invitation #${intent.id}? Its previous token will stop working only if the new invitation is committed.`
+                            : `Send an invitation to ${data.application.contactEmail}? This recipient is fixed by the approved application.`}
                 </p>
                 <div className="actions">
                   <button className="button primary" disabled={busy} onClick={() => void execute()}>
@@ -386,8 +391,9 @@ function Detail({ rawId }: { rawId: string | undefined }) {
                         onChange={(e) => setNote(e.target.value)}
                       />
                       <p className="form-hint">
-                        Approval creates an inactive brand. Requesting information records the
-                        decision and note; this portal does not send a follow-up email.
+                        Approval creates a brand and queues its invitation. Registration activates
+                        merchant access. Requesting information records the decision and note; this
+                        portal does not send a follow-up email.
                       </p>
                       <button className="button primary" type="submit">
                         Review application
@@ -464,6 +470,7 @@ function Detail({ rawId }: { rawId: string | undefined }) {
                       <tr>
                         <th scope="col">Invitation</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Email delivery</th>
                         <th scope="col">Expires</th>
                         <th scope="col">Actions</th>
                       </tr>
@@ -541,9 +548,30 @@ function InvitationRow({
       <td>
         <Badge value={invitation.status} />
       </td>
+      <td>
+        <strong>{invitation.delivery?.state.replaceAll('_', ' ') ?? 'NOT TRACKED'}</strong>
+        <small>{invitation.delivery ? ` · ${invitation.delivery.attempts} attempt(s)` : ''}</small>
+        {invitation.delivery?.providerId && (
+          <small>Provider ID: {invitation.delivery.providerId}</small>
+        )}
+        {invitation.delivery?.errorCode && (
+          <p role="status">{invitation.delivery.errorCode.replaceAll('_', ' ')}</p>
+        )}
+        {invitation.delivery?.state === 'PROVIDER_ACCEPTED' && (
+          <p className="muted">Provider accepted; inbox delivery not yet confirmed.</p>
+        )}
+      </td>
       <td>{dateTime(invitation.expiresAt)}</td>
       <td>
         <div className="actions">
+          <button
+            className="button text"
+            disabled={disabled || invitation.status !== 'PENDING'}
+            aria-label={`Expire invitation ${invitation.id}`}
+            onClick={() => confirm({ kind: 'expire', id: invitation.id })}
+          >
+            Expire now
+          </button>
           <button
             className="button text"
             disabled={disabled || invitation.status !== 'PENDING'}
