@@ -2,50 +2,96 @@ import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../auth/context'
 import { errorMessage } from '../api/client'
-import { acceptBrandInvitation, type Acceptance } from './accept'
+import type { Acceptance } from './accept'
+
+type Preview = {
+  brandName: string
+  recipientEmail: string
+  expiresAt: string
+  termsVersion: string
+  existingAccount: boolean
+}
 export function AcceptInvitation() {
   const { store, session } = useAuth()
-  const [email, setEmail] = useState('')
+  const [token, setToken] = useState(
+    () => new URLSearchParams(window.location.hash.slice(1)).get('token') || '',
+  )
+  const [preview, setPreview] = useState<Preview | null>(null)
   const [password, setPassword] = useState('')
-  const [token, setToken] = useState('')
-  const [createAccount, setCreateAccount] = useState(false)
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [terms, setTerms] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
   const [accepted, setAccepted] = useState<Acceptance | null>(null)
-  const request = useRef<AbortController | null>(null)
-  const mounted = useRef(true)
+  const pending = useRef(false)
   useEffect(() => {
-    mounted.current = true
-    return () => {
-      mounted.current = false
-      request.current?.abort()
-    }
+    if (window.location.hash)
+      window.history.replaceState(null, '', window.location.pathname + window.location.search)
   }, [])
-  async function submit(event: FormEvent) {
+  async function verify(event: FormEvent) {
     event.preventDefault()
-    if (request.current) return
-    const controller = new AbortController()
-    request.current = controller
+    if (pending.current) return
+    pending.current = true
     setBusy(true)
     setError('')
-    const input = { email, password, token, createAccount }
-    setPassword('')
-    setToken('')
-    const timeout = setTimeout(() => controller.abort(), 20000)
     try {
-      const result = await acceptBrandInvitation(store.client, input, controller.signal)
-      if (!controller.signal.aborted) setAccepted(result)
-    } catch (failure) {
-      if (!mounted.current) return
-      if (!controller.signal.aborted) setError(errorMessage(failure))
-      else
-        setError(
-          'The request timed out or was cancelled. Ask your operator to check invitation status before retrying.',
-        )
+      setPreview(
+        await store.client.request<Preview>('/merchant-registration/verify', null, {
+          method: 'POST',
+          body: JSON.stringify({ token }),
+          signal: AbortSignal.timeout(20000),
+        }),
+      )
+    } catch {
+      setError(
+        'This invitation could not be verified. It may be expired, revoked, or already used. Ask Brandista for a new link, or try again if the connection failed.',
+      )
     } finally {
-      clearTimeout(timeout)
-      request.current = null
-      if (mounted.current) setBusy(false)
+      pending.current = false
+      setBusy(false)
+    }
+  }
+  async function submit(event: FormEvent) {
+    event.preventDefault()
+    if (!preview || pending.current) return
+    if (password !== confirmPassword) {
+      setError('The passwords do not match.')
+      return
+    }
+    if (!terms) {
+      setError('Please read and accept the merchant terms.')
+      return
+    }
+    pending.current = true
+    setBusy(true)
+    setError('')
+    const secret = password
+    setPassword('')
+    setConfirmPassword('')
+    try {
+      setAccepted(
+        await store.client.request<Acceptance>('/merchant-registration/complete', null, {
+          method: 'POST',
+          signal: AbortSignal.timeout(20000),
+          body: JSON.stringify({
+            token,
+            email: preview.recipientEmail,
+            password: secret,
+            termsAccepted: true,
+            termsVersion: preview.termsVersion,
+          }),
+        }),
+      )
+      setToken('')
+      setPreview(null)
+    } catch (failure) {
+      setError(
+        errorMessage(failure) +
+          ' If the request timed out, try merchant sign-in before retrying. Existing account passwords are never reset by this form.',
+      )
+    } finally {
+      pending.current = false
+      setBusy(false)
     }
   }
   return (
@@ -54,104 +100,120 @@ export function AcceptInvitation() {
         <Link to="/login">
           <img src="/brandista-approved-logo.jpeg.jpeg" alt="Brandista" />
         </Link>
-        <Link to="/presentation">Marketplace presentation guide</Link>
+        <span>MERCHANT PARTNERSHIPS</span>
       </header>
       <section className="panel onboarding-panel">
-        <span className="eyebrow">YOUR BRAND JOURNEY</span>
-        <h1>Accept your invitation.</h1>
-        <p>
-          Use the approved application's contact email and the secret delivered by your authorized
-          Brandista operator. Acceptance establishes the invited membership; the operator activates
-          the brand separately.
-        </p>
+        <span className="eyebrow">WELCOME TO BRANDISTA</span>
+        <h1>{accepted ? 'Your merchant account is ready.' : 'Activate your merchant account.'}</h1>
         {session ? (
           <div className="notice">
-            <p>
-              Sign out of your current workspace before accepting an invitation for another
-              identity.
-            </p>
-            <button
-              className="button primary"
-              onClick={() =>
-                store.logout('Workspace signed out. Continue with the invited identity.')
-              }
-            >
+            <p>Sign out of your workspace before accepting an invitation.</p>
+            <button className="button primary" onClick={() => store.logout('You have signed out.')}>
               Sign out of workspace
             </button>
           </div>
         ) : accepted ? (
-          <div role="status" className="notice">
-            <h2>Invitation accepted</h2>
+          <div role="status">
             <p>
-              Brand #{accepted.brandId} membership was accepted by the backend. Ask your operator to
-              activate the brand, then choose “Merchant · assigned brands” at sign-in.
+              Your account has access to brand #{accepted.brandId}. Sign in and select “Merchant ·
+              assigned brands” to manage your catalogue.
             </p>
             <Link className="button primary" to="/login">
-              Continue to workspace sign-in
+              Continue to merchant sign-in
             </Link>
           </div>
+        ) : !preview ? (
+          <form onSubmit={(event) => void verify(event)}>
+            <p>
+              Your application has been approved. Verify your private invitation to continue. Links
+              expire after 48 hours.
+            </p>
+            <fieldset disabled={busy}>
+              <label htmlFor="invitation-token">Invitation secret</label>
+              <input
+                id="invitation-token"
+                type="password"
+                autoComplete="off"
+                required
+                pattern="[A-Za-z0-9_-]{43}"
+                value={token}
+                onChange={(event) => setToken(event.target.value.trim())}
+              />
+              <button className="button primary" type="submit">
+                {busy ? 'Verifying…' : 'Verify invitation'}
+              </button>
+            </fieldset>
+          </form>
         ) : (
           <form onSubmit={(event) => void submit(event)}>
+            <h2>{preview.brandName}</h2>
+            <p>
+              Invited email: <strong>{preview.recipientEmail}</strong>
+            </p>
+            <p>
+              Expires{' '}
+              {new Date(
+                preview.expiresAt.endsWith('Z') ? preview.expiresAt : preview.expiresAt + 'Z',
+              ).toLocaleString()}
+              .
+            </p>
+            <p>
+              {preview.existingAccount
+                ? 'Enter your existing Brandista password. This invitation adds your approved brand assignment without creating a duplicate account.'
+                : 'Set a password for your new merchant account.'}
+            </p>
             <fieldset disabled={busy}>
-              <label htmlFor="invited-email">Invited email</label>
+              <label htmlFor="merchant-password">
+                {preview.existingAccount ? 'Existing account password' : 'Create password'}
+              </label>
               <input
-                id="invited-email"
-                type="email"
-                autoComplete="username"
-                required
-                maxLength={254}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <label htmlFor="recipient-password">Recipient account password</label>
-              <input
-                id="recipient-password"
+                id="merchant-password"
                 type="password"
-                autoComplete={createAccount ? 'new-password' : 'current-password'}
+                autoComplete={preview.existingAccount ? 'current-password' : 'new-password'}
                 required
+                minLength={12}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(event) => setPassword(event.target.value)}
               />
+              <label htmlFor="merchant-password-confirm">Confirm password</label>
+              <input
+                id="merchant-password-confirm"
+                type="password"
+                autoComplete={preview.existingAccount ? 'current-password' : 'new-password'}
+                required
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
+              />
+              <p className="muted">
+                At least 12 characters and at most 72 UTF-8 bytes. Keep your password private.
+              </p>
               <label className="check-line">
                 <input
                   type="checkbox"
-                  checked={createAccount}
-                  onChange={(e) => setCreateAccount(e.target.checked)}
-                />
-                Create a new customer identity for this invited email first
+                  required
+                  checked={terms}
+                  onChange={(event) => setTerms(event.target.checked)}
+                />{' '}
+                I accept the{' '}
+                <Link to="/merchant-terms" target="_blank" rel="noreferrer">
+                  merchant terms
+                </Link>{' '}
+                ({preview.termsVersion}).
               </label>
-              <p className="muted">
-                Existing accounts: leave this unchecked. New passwords: at least 12 characters, at
-                most 72 UTF-8 bytes. Creating an identity does not grant brand or platform access by
-                itself.
-              </p>
-              <label htmlFor="invitation-secret">Invitation secret</label>
-              <input
-                id="invitation-secret"
-                type="password"
-                autoComplete="off"
-                spellCheck={false}
-                required
-                maxLength={256}
-                value={token}
-                onChange={(e) => setToken(e.target.value)}
-              />
-              {error && (
-                <p role="alert" className="notice error">
-                  {error}
-                </p>
-              )}
               <button className="button primary full" type="submit">
-                {busy ? 'Verifying invitation…' : 'Verify identity and accept invitation'}
+                {busy ? 'Activating account…' : 'Accept terms and activate account'}
               </button>
             </fieldset>
           </form>
         )}
+        {error && (
+          <p role="alert" className="notice error">
+            {error}
+          </p>
+        )}
         <p className="security-note">
-          Secrets are used only for this acceptance attempt, never read from URLs or saved in
-          browser storage. If registration succeeds but a later step fails, use the existing-account
-          option on retry. Lost, expired or rejected invitation? Ask your operator for a status
-          check or reissue. Production email delivery requires a configured provider.
+          Your invitation is single-use and bound to your approved brand. We never save it or your
+          password in browser storage. If you already accepted it, continue to sign-in.
         </p>
         <Link to="/login">Back to workspace sign-in</Link>
       </section>

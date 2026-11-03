@@ -3,11 +3,10 @@ import { MemoryRouter } from 'react-router-dom'
 import { StrictMode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 import { ApiClient } from '../src/api/client'
-import { acceptBrandInvitation } from '../src/onboarding/accept'
 import { SessionStore } from '../src/auth/session'
 import { SessionContext } from '../src/auth/context'
 import { App } from '../src/App'
-import { json, login } from './fixtures'
+import { json } from './fixtures'
 const secret = 'a'.repeat(43)
 const input = {
   email: 'partner@example.invalid',
@@ -33,77 +32,20 @@ it('route scrolling never installs a Promise as an effect cleanup', () => {
   expect(() => page.unmount()).not.toThrow()
   scroll.mockRestore()
 })
-it('accepts only through authenticated existing contract without requiring active merchant access', async () => {
+it('verifies the invitation before atomic account activation and requires terms consent', async () => {
   const fetcher = vi
     .fn()
-    .mockResolvedValueOnce(json({ ...login, account: { ...login.account, email: input.email } }))
+    .mockResolvedValueOnce(
+      json({
+        brandName: 'TSC synthetic',
+        recipientEmail: input.email,
+        expiresAt: '2026-11-05T10:00:00',
+        termsVersion: 'merchant-v1-2026-11',
+        existingAccount: false,
+      }),
+    )
     .mockResolvedValueOnce(json({ invitationId: 12, brandId: 3, membershipId: 8 }))
   vi.stubGlobal('fetch', fetcher)
-  await expect(
-    acceptBrandInvitation(new ApiClient('https://api.example.invalid/api/v1'), input),
-  ).resolves.toEqual({ invitationId: 12, brandId: 3, membershipId: 8 })
-  expect(fetcher.mock.calls.map((call) => call[0])).toEqual([
-    'https://api.example.invalid/api/v1/auth/login',
-    'https://api.example.invalid/api/v1/brand-invitations/accept',
-  ])
-  expect(fetcher.mock.calls[1][1].headers.get('Authorization')).toBe('Bearer test-access-token')
-  expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual({ token: secret })
-  expect(fetcher.mock.calls[1][1]).toMatchObject({
-    credentials: 'omit',
-    cache: 'no-store',
-    redirect: 'error',
-    referrerPolicy: 'no-referrer',
-  })
-})
-it('rejects malformed secrets before login or account creation', async () => {
-  const fetcher = vi.fn()
-  vi.stubGlobal('fetch', fetcher)
-  await expect(
-    acceptBrandInvitation(new ApiClient('https://api.example.invalid/api/v1'), {
-      ...input,
-      token: 'bad',
-      createAccount: true,
-    }),
-  ).rejects.toThrow('complete invitation secret')
-  expect(fetcher).not.toHaveBeenCalled()
-})
-it('keeps invalid, expired and wrong-recipient rejection generic and does not claim activation', async () => {
-  vi.stubGlobal(
-    'fetch',
-    vi
-      .fn()
-      .mockResolvedValueOnce(json({ ...login, account: { ...login.account, email: input.email } }))
-      .mockResolvedValueOnce(json({ token: secret, password: 'never echo' }, 400)),
-  )
-  await expect(
-    acceptBrandInvitation(new ApiClient('https://api.example.invalid/api/v1'), input),
-  ).rejects.toThrow('Some details were not accepted')
-})
-it('creates only an explicitly requested ordinary customer identity before acceptance', async () => {
-  const fetcher = vi
-    .fn()
-    .mockResolvedValueOnce(json({ id: 8 }, 201))
-    .mockResolvedValueOnce(json({ ...login, account: { ...login.account, email: input.email } }))
-    .mockResolvedValueOnce(json({ invitationId: 12, brandId: 3, membershipId: 8 }))
-  vi.stubGlobal('fetch', fetcher)
-  await acceptBrandInvitation(new ApiClient('https://api.example.invalid/api/v1'), {
-    ...input,
-    createAccount: true,
-  })
-  expect(fetcher.mock.calls[0][0]).toContain('/registrations')
-  expect(JSON.parse(fetcher.mock.calls[0][1].body)).toEqual({
-    email: input.email,
-    password: input.password,
-  })
-})
-it('clears secret fields on submit and reports acceptance separately from brand activation', async () => {
-  vi.stubGlobal(
-    'fetch',
-    vi
-      .fn()
-      .mockResolvedValueOnce(json({ ...login, account: { ...login.account, email: input.email } }))
-      .mockResolvedValueOnce(json({ invitationId: 12, brandId: 3, membershipId: 8 })),
-  )
   const store = new SessionStore(new ApiClient('https://api.example.invalid/api/v1'))
   render(
     <SessionContext value={store}>
@@ -112,15 +54,61 @@ it('clears secret fields on submit and reports acceptance separately from brand 
       </MemoryRouter>
     </SessionContext>,
   )
-  fireEvent.change(screen.getByLabelText('Invited email'), { target: { value: input.email } })
-  fireEvent.change(screen.getByLabelText('Recipient account password'), {
-    target: { value: input.password },
-  })
   fireEvent.change(screen.getByLabelText('Invitation secret'), { target: { value: secret } })
-  fireEvent.click(screen.getByRole('button', { name: 'Verify identity and accept invitation' }))
-  expect(await screen.findByRole('heading', { name: 'Invitation accepted' })).toBeInTheDocument()
-  expect(screen.getByText(/Ask your operator to activate/)).toBeInTheDocument()
+  fireEvent.click(screen.getByRole('button', { name: 'Verify invitation' }))
+  expect(await screen.findByRole('heading', { name: 'TSC synthetic' })).toBeInTheDocument()
+  fireEvent.change(screen.getByLabelText('Create password'), { target: { value: input.password } })
+  fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: input.password } })
+  const consent = screen.getByRole('checkbox')
+  expect(consent).not.toBeChecked()
+  expect(consent).toBeRequired()
+  fireEvent.click(consent)
+  fireEvent.click(screen.getByRole('button', { name: 'Accept terms and activate account' }))
+  expect(
+    await screen.findByRole('heading', { name: 'Your merchant account is ready.' }),
+  ).toBeInTheDocument()
+  expect(fetcher.mock.calls.map((call) => call[0])).toEqual([
+    'https://api.example.invalid/api/v1/merchant-registration/verify',
+    'https://api.example.invalid/api/v1/merchant-registration/complete',
+  ])
+  expect(JSON.parse(fetcher.mock.calls[1][1].body)).toEqual({
+    token: secret,
+    email: input.email,
+    password: input.password,
+    termsAccepted: true,
+    termsVersion: 'merchant-v1-2026-11',
+  })
   expect(store.snapshot()).toBeNull()
+})
+it('loads the private URL fragment and removes it without persisting the invitation', () => {
+  window.history.replaceState(null, '', '/accept-invitation#token=' + secret)
+  const store = new SessionStore(new ApiClient('https://api.example.invalid/api/v1'))
+  render(
+    <SessionContext value={store}>
+      <MemoryRouter initialEntries={['/accept-invitation']}>
+        <App />
+      </MemoryRouter>
+    </SessionContext>,
+  )
+  expect(screen.getByLabelText('Invitation secret')).toHaveValue(secret)
+  expect(window.location.hash).toBe('')
+  expect(window.localStorage.getItem('token')).toBeNull()
+  window.history.replaceState(null, '', '/')
+})
+it('does not reveal an activation form for an expired or revoked invitation', async () => {
+  vi.stubGlobal('fetch', vi.fn().mockResolvedValue(json({}, 400)))
+  const store = new SessionStore(new ApiClient('https://api.example.invalid/api/v1'))
+  render(
+    <SessionContext value={store}>
+      <MemoryRouter initialEntries={['/accept-invitation']}>
+        <App />
+      </MemoryRouter>
+    </SessionContext>,
+  )
+  fireEvent.change(screen.getByLabelText('Invitation secret'), { target: { value: secret } })
+  fireEvent.click(screen.getByRole('button', { name: 'Verify invitation' }))
+  expect(await screen.findByRole('alert')).toHaveTextContent('expired, revoked, or already used')
+  expect(screen.queryByLabelText('Create password')).not.toBeInTheDocument()
 })
 it('presentation materials use no API and label role scenarios as illustrative', async () => {
   const fetcher = vi.fn()

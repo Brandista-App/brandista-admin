@@ -42,6 +42,12 @@ export interface Invitation {
   expiresAt: string
   replacesInvitationId: number | null
   acceptedUserId: number | null
+  delivery?: {
+    state: string
+    attempts: number
+    errorCode: string | null
+    providerId: string | null
+  }
 }
 export interface InvitationPage {
   content: Invitation[]

@@ -264,7 +264,7 @@ function Detail({ rawId }: { rawId: string | undefined }) {
       else await store.api.reissueInvitation(action.id)
       setNotice(
         action.kind === 'create' || action.kind === 'reissue'
-          ? 'The backend confirmed invitation delivery. Review the refreshed invitation status below.'
+          ? 'Invitation created. Email delivery is tracked separately below; queueing does not confirm receipt.'
           : 'The backend completed the action. Review the refreshed state below.',
       )
       setIntent(null)
@@ -313,7 +313,7 @@ function Detail({ rawId }: { rawId: string | undefined }) {
                 <h2 id="confirm-heading">{intentLabels[intent.kind]}</h2>
                 <p>
                   {intent.kind === 'review'
-                    ? `Record ${intent.decision.replaceAll('_', ' ')} for ${data.application.brandName}? Approval creates an inactive brand; it does not activate it.`
+                    ? `Record ${intent.decision.replaceAll('_', ' ')} for ${data.application.brandName}? Approval creates a brand and queues its invitation. The brand activates when the invited merchant completes registration.`
                     : intent.kind === 'activate'
                       ? 'Activate this brand? It will become available through existing customer catalogue rules. The backend rechecks eligibility.'
                       : intent.kind === 'revoke'
@@ -386,8 +386,9 @@ function Detail({ rawId }: { rawId: string | undefined }) {
                         onChange={(e) => setNote(e.target.value)}
                       />
                       <p className="form-hint">
-                        Approval creates an inactive brand. Requesting information records the
-                        decision and note; this portal does not send a follow-up email.
+                        Approval creates a brand and queues its invitation. Registration activates
+                        merchant access. Requesting information records the decision and note; this
+                        portal does not send a follow-up email.
                       </p>
                       <button className="button primary" type="submit">
                         Review application
@@ -464,6 +465,7 @@ function Detail({ rawId }: { rawId: string | undefined }) {
                       <tr>
                         <th scope="col">Invitation</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Email delivery</th>
                         <th scope="col">Expires</th>
                         <th scope="col">Actions</th>
                       </tr>
@@ -540,6 +542,16 @@ function InvitationRow({
       </td>
       <td>
         <Badge value={invitation.status} />
+      </td>
+      <td>
+        <strong>{invitation.delivery?.state.replaceAll('_', ' ') ?? 'NOT TRACKED'}</strong>
+        <small>{invitation.delivery ? ` · ${invitation.delivery.attempts} attempt(s)` : ''}</small>
+        {invitation.delivery?.errorCode && (
+          <p role="status">{invitation.delivery.errorCode.replaceAll('_', ' ')}</p>
+        )}
+        {invitation.delivery?.state === 'PROVIDER_ACCEPTED' && (
+          <p className="muted">Provider accepted; inbox delivery not yet confirmed.</p>
+        )}
       </td>
       <td>{dateTime(invitation.expiresAt)}</td>
       <td>

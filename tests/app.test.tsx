@@ -283,7 +283,7 @@ describe('invitations and controlled activation', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Create invitation' }))
     expect(screen.getByText(/recipient is fixed/)).toHaveTextContent(application.contactEmail)
     fireEvent.click(screen.getByRole('button', { name: 'Confirm invitation' }))
-    await screen.findByText(/backend confirmed invitation delivery/)
+    await screen.findByText(/queueing does not confirm receipt/)
     const call = fetcher.mock.calls.find(
       (call) => call[0].endsWith('/invitations') && call[1]?.method === 'POST',
     )!
@@ -302,7 +302,7 @@ describe('invitations and controlled activation', () => {
       expect(error).not.toHaveTextContent('NEVER-ECHO-SECRET')
       if (status === 503) expect(error).toHaveTextContent('No invitation delivery is confirmed')
       if (status === 409) expect(error).toHaveTextContent('conflicts')
-      expect(screen.queryByText(/backend confirmed invitation delivery/)).not.toBeInTheDocument()
+      expect(screen.queryByText(/queueing does not confirm receipt/)).not.toBeInTheDocument()
     },
   )
   it('revokes a pending invitation after confirmation', async () => {
@@ -321,7 +321,7 @@ describe('invitations and controlled activation', () => {
     expect(screen.getByRole('button', { name: 'Revoke invitation 12' })).toBeDisabled()
     fireEvent.click(screen.getByRole('button', { name: 'Reissue invitation 12' }))
     fireEvent.click(screen.getByRole('button', { name: 'Confirm reissue' }))
-    await screen.findByText(/backend confirmed invitation delivery/)
+    await screen.findByText(/queueing does not confirm receipt/)
     expect(
       fetcher.mock.calls.some(
         (call) => call[0].endsWith('/brand-invitations/12/reissue') && call[1]?.method === 'POST',
