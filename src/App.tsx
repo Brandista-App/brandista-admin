@@ -14,6 +14,7 @@ import { useAuth } from './auth/context'
 import { Applications, ApplicationDetail, Overview, AssignedBrands } from './pages'
 import { MerchantWorkspace } from './merchant/Workspace'
 import { AcceptInvitation } from './onboarding/AcceptInvitation'
+import { ControlCenter } from './content/ControlCenter'
 import { Presentation } from './presentation/Presentation'
 
 function Login() {
@@ -165,6 +166,18 @@ function ProtectedShell() {
               <NavLink to="/overview">
                 <span aria-hidden="true">◫</span> Overview
               </NavLink>
+              <span className="nav-caption">APP CONTROL CENTER</span>
+              {Object.entries({
+                dashboard: 'Dashboard',
+                banners: 'Banners & Posters',
+                sections: 'Homepage Sections',
+                brands: 'Featured Brands',
+                history: 'Publishing History',
+              }).map(([key, label]) => (
+                <NavLink key={key} to={'/content/' + key}>
+                  {label}
+                </NavLink>
+              ))}
               <NavLink to="/applications">
                 <span aria-hidden="true">▤</span> Brand applications
               </NavLink>
@@ -250,6 +263,7 @@ export function App() {
       <Route element={<ProtectedShell />}>
         <Route index element={<Home />} />
         <Route element={<AdminOnly />}>
+          <Route path="content/:tab" element={<ControlCenter />} />
           <Route path="overview" element={<Overview />} />
           <Route path="applications" element={<Applications />} />
           <Route path="applications/:id" element={<ApplicationDetail />} />
