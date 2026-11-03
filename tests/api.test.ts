@@ -85,6 +85,7 @@ describe('API boundary and backend contract', () => {
     await api.review(7, 'APPROVED', ' Reviewed ')
     await api.invitations(7, 2)
     await api.createInvitation(7)
+    await api.expireInvitation(12)
     await api.revokeInvitation(12)
     await api.reissueInvitation(12)
     await api.onboarding(7)
@@ -98,6 +99,7 @@ describe('API boundary and backend contract', () => {
       ],
       ['/super-admin/brand-applications/7/invitations?page=2&size=20'],
       ['/super-admin/brand-applications/7/invitations', { method: 'POST' }],
+      ['/super-admin/brand-invitations/12/expire', { method: 'POST' }],
       ['/super-admin/brand-invitations/12/revoke', { method: 'POST' }],
       ['/super-admin/brand-invitations/12/reissue', { method: 'POST' }],
       ['/super-admin/brand-applications/7/onboarding'],
